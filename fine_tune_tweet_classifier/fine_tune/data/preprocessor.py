@@ -14,6 +14,15 @@ class Preprocessor():
         self.tokenizer = tokenizer
         self.label_encoder = LabelEncoder()
 
+    def encode_labels(self, labels: pandas.Series):
+        encoded_labels = self.label_encoder.fit_transform(labels)
+
+        encoded_labels_mapping = {label: encode for encode, label in enumerate(self.label_encoder.classes_)}
+        logging.info(f"Encoded Labels: {encoded_labels_mapping}")
+        print(f"Encoded Labels: {encoded_labels_mapping}")
+
+        return encoded_labels
+
     def reverse_encoded_label(self, argument: list):
         return self.label_encoder.inverse_transform(list(argument))
 
@@ -46,11 +55,7 @@ class Preprocessor():
 
     def prepare_inputs(self, labeled_tweets: pandas.DataFrame, validation_size: float, batch_size: int):
         # Encode labels
-        labeled_tweets["label"] = self.label_encoder.fit_transform(labeled_tweets["label"])
-
-        encoded_labels = {label: encode for encode, label in enumerate(self.label_encoder.classes_)}
-        logging.info(f"Encoded Labels: {encoded_labels}")
-        print(f"Encoded Labels: {encoded_labels}")
+        labeled_tweets["label"] = self.encode_labels(labeled_tweets["label"])
 
         # Remove emojis
         labeled_tweets["text"] = self.remove_emojis(labeled_tweets["text"])

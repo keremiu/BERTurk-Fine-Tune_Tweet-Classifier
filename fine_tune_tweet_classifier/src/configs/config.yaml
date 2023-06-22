@@ -5,6 +5,7 @@ device: cuda
 
 model_parameters:
   bert_model_name: dbmdz/bert-base-turkish-128k-cased
+  num_classes: 3
   layers: [
     {"name": "linear", "in": 768, "out": 192},
     {"name": relu},

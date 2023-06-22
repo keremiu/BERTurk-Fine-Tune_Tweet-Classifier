@@ -34,6 +34,10 @@ class ConfigService(metaclass=Singleton):
         return self.config["config"]["model_parameters"]["bert_model_name"]
 
     @property
+    def num_classes(self):
+        return self.config["config"]["model_parameters"]["num_classses"]
+
+    @property
     def layers(self):
         return self.config["config"]["model_parameters"]["layers"]
 

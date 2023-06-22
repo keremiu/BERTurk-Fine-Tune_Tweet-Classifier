@@ -22,7 +22,7 @@ class Trainer():
         self.device = torch.device(self.config_service.device)
 
         bert = transformers.BertModel.from_pretrained(self.config_service.bert_model_name)
-        self.model = BERTModel(bert, self.config_service.layers).to(self.device)
+        self.model = BERTModel(bert, self.config_service.layers, self.config_service.num_classes).to(self.device)
 
     def test(self):
         labeled_tweets = self.data_service.read_test_tweets()
