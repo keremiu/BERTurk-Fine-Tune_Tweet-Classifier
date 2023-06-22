@@ -19,7 +19,7 @@ class Trainer():
         
         self.preprocessor = Preprocessor(self.tokenizer)        
 
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.device = torch.device(self.config_service.device)
 
         bert = transformers.BertModel.from_pretrained(self.config_service.bert_model_name)
         self.model = BERTModel(bert, self.config_service.layers).to(self.device)
@@ -33,11 +33,24 @@ class Trainer():
             batch_size=1
         )
 
+        labels = []
+        preds = []
+
         self.model.eval()
-        for test_input_ids, test_attention_masks, test_labels, test_texts in test_dataloader:
+        for test_input_ids, test_attention_masks, test_label, test_text in test_dataloader:
             test_output = self.model(test_input_ids.to(self.device), test_attention_masks.to(self.device))
 
-            test_f1 = f1_score(test_labels, test_output)
+            labels.append(test_label.argmax().item())
+            preds.append(test_output.argmax().item())
+
+            info = f"Text: {test_text}\nLabel: {test_label}\nOutput: {test_output.argmax(axis=1)}\n"
+            print(info)
+            logging.info(info)
+
+        end_info = f"Test F1 Score: {f1_score(labels, preds, average='macro')}\nTest Confusion Matrix: {confusion_matrix(labels, preds)}"
+        print(end_info)
+        logging.info(end_info)        
+
 
     def train(self):
         labeled_tweets = self.data_service.read_training_tweets()
@@ -55,39 +68,46 @@ class Trainer():
             ...
 
         for epoch in range(1, self.config_service.num_epochs+1):
-            training_f1 = 0
             training_loss = 0
+            training_preds = []
+            training_labels = []
 
             self.model.train()
             for input_ids, attention_masks, labels, _ in train_dataloader:
-                output = self.model(input_ids.to(self.device), attention_masks.to(self.device))
+                outputs = self.model(input_ids.to(self.device), attention_masks.to(self.device))
 
-                loss = loss_fn(output, labels.to(self.device))
+                loss = loss_fn(outputs, labels.to(self.device))
                 training_loss += loss.item()
 
-                training_f1 += f1_score(labels, output, average="macro")
+                training_labels += labels.argmax(axis=1).tolist()
+                training_preds += outputs.detach().argmax(axis=1).tolist()
 
                 self.model.zero_grad()
-                loss.backwards()
+                loss.backward()
                 optimizer.step()
 
 
-            validation_f1 = 0
             validation_loss = 0
+            validation_preds = []
+            validation_labels = []
 
             self.model.eval()
             for val_input_ids, val_attention_masks, val_labels, _ in validation_dataloader:
-                val_output = self.model(val_input_ids.to(self.devices), val_attention_masks.to(self.device))
+                val_outputs = self.model(val_input_ids.to(self.device), val_attention_masks.to(self.device))
 
-                val_loss = loss_fn(val_output, val_labels.to(self.debice))
-                validation_loss += val_loss
+                val_loss = loss_fn(val_outputs, val_labels.to(self.device))
+                validation_loss += val_loss.item()
 
-                validation_f1 += f1_score(val_labels, val_output)
-
+                validation_labels += val_labels.argmax(axis=1).tolist()
+                validation_preds += val_outputs.argmax(axis=1).tolist()
             
-            info = f"Epoch: {epoch}\t|\t" \
-                   f"Validation F1 Score: {validation_f1/len(validation_dataloader)}\t|\tValidation Loss: {validation_loss/len(validation_dataloader)}\t|\t" \
-                   f"Training F1 Score: {training_f1/len(train_dataloader)}\t|\tTraining Loss: {training_loss/len(train_dataloader)}"
+            training_f1 = f1_score(training_labels, training_preds, average="macro")
+            validation_f1 = f1_score(validation_labels, validation_preds, average="macro")
+            validation_confusion_matrix = confusion_matrix(validation_labels, validation_preds)
+            info = f"Epoch: {epoch}\n" \
+                   f"Validation F1 Score:\t{validation_f1}\t|\tValidation Loss: {validation_loss/len(validation_dataloader)}\n" \
+                   f"Training F1 Score:\t{training_f1}\t|\tTraining Loss: {training_loss/len(train_dataloader)}\n" \
+                   f"Validation Confusion Matrix:\n{validation_confusion_matrix}\n"
             
             logging.info(info)
             print(info)

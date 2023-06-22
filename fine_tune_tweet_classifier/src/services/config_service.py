@@ -24,6 +24,10 @@ class ConfigService(metaclass=Singleton):
     @property
     def test_tweets_csv_path(self):
         return self.config["config"]["test_tweets_csv_path"]
+    
+    @property
+    def device(self):
+        return self.config["config"]["device"]
 
     @property
     def bert_model_name(self):

@@ -27,7 +27,7 @@ class BERTModel(torch.nn.Module):
         return layer
 
     def forward(self, input_ids, attention_mask):
-        _, output = self.bert(input_ids= input_ids, attention_mask=attention_mask, return_dict=False)
+        _, output = self.bert(input_ids=input_ids, attention_mask=attention_mask, return_dict=False)
 
         for layer in self.layers:
             output = layer(output)
