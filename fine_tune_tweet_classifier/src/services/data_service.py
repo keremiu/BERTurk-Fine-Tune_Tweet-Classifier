@@ -9,7 +9,18 @@ class DataService(metaclass=Singleton):
     def __init__(self, config_service: ConfigService):
         self.config_service = config_service
     
-    def read_csv(self):
-        tweet_data = pandas.read_csv(self.config_service.tweets_csv_path)
+    def read_training_tweets(self) -> pandas.DataFrame:
+        labeled_tweets = pandas.read_csv(self.config_service.training_tweets_csv_path)
 
-        return tweet_data
+        if not {"text", "label"}.issubset(labeled_tweets.columns):
+            raise Exception("The dataset must contain the columns 'text' and 'label'")
+
+        return labeled_tweets
+    
+    def read_test_tweets(self) -> pandas.DataFrame:
+        labeled_tweets = pandas.read_csv(self.config_service.test_tweets_csv_path)
+
+        if not {"text", "label"}.issubset(labeled_tweets.columns):
+            raise Exception("The dataset must contain the columns 'text' and 'label'")
+
+        return labeled_tweets

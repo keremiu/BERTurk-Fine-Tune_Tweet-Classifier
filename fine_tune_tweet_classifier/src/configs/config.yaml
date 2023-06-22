@@ -1,15 +1,16 @@
-tweets_csv_path: lorem ipsum 
+training_tweets_csv_path: training_tweets.csv
+test_tweets_csv_path: test_tweets.csv
 
 model_parameters:
-  l: l
-  o: o
-  r: r
-  e: e
-  m: m
+  bert_model_name: dbmdz/bert-base-turkish-128k-cased
+  layers: [
+    {"name": "linear", "in": 768, "out": 3},
+    {"name": "softmax"}
+  ]
 
 training_parameters:
-  l: l
-  o: o
-  r: r
-  e: e
-  m: m
+  validation_size: 0.2      # A percentage between 0 and 1
+  batch_size: 32
+  learning_rate: 0.000001
+  scheduler:                # Leave empty to disable
+  num_epochs: 5

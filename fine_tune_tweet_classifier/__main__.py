@@ -5,7 +5,6 @@ from src.utils.globals import Globals
 import logging
 import os
 
-
 def configure_logger():
     # Create artifacts folder if not exists
     os.makedirs(Globals.artifacts_path, exist_ok=True)
@@ -17,11 +16,11 @@ def configure_logger():
     # Configure logger
     logging.basicConfig(filename=log_file, format='[%(asctime)s][%(levelname)s] %(message)s', level=logging.INFO)
 
-
 def main(app_container: AppContainer):
     configure_logger()
 
-    ...
+    app_container.trainer.train()
+
 
 if __name__ == "__main__":
     app_container = AppContainer()

@@ -18,5 +18,38 @@ class ConfigService(metaclass=Singleton):
                 self.config[config_name] = yaml.safe_load(cf)
 
     @property
-    def tweets_csv_path(self):
-        return self.config["config"]["tweets_csv_path"]
+    def training_tweets_csv_path(self):
+        return self.config["config"]["training_tweets_csv_path"]
+
+    @property
+    def test_tweets_csv_path(self):
+        return self.config["config"]["test_tweets_csv_path"]
+
+    @property
+    def bert_model_name(self):
+        return self.config["config"]["model_parameters"]["bert_model_name"]
+
+    @property
+    def layers(self):
+        return self.config["config"]["model_parameters"]["layers"]
+
+    @property
+    def validation_size(self):
+        return self.config["config"]["training_parameters"]["validation_size"]
+    
+    @property
+    def batch_size(self):
+        return self.config["config"]["training_parameters"]["batch_size"]
+    
+    @property
+    def learning_rate(self):
+        return self.config["config"]["training_parameters"]["learning_rate"]
+
+    @property
+    def lr_scheduler(self):
+        return self.config["config"]["training_parameters"]["scheduler"]
+    
+    @property
+    def num_epochs(self):
+        return self.config["config"]["training_parameters"]["num_epochs"]
+    
