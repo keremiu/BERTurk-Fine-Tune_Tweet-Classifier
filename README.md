@@ -6,7 +6,7 @@ TBA
 
 ## Installation
 ### Dependencies
-Python 3+
+Python 3+ \
 CUDA 11.6+   
 
 ### Setup
