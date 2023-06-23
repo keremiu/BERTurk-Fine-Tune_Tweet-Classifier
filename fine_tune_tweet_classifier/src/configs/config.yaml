@@ -5,7 +5,6 @@ device: cuda
 
 model_parameters:
   bert_model_name: dbmdz/bert-base-turkish-128k-cased
-  num_classes: 3
   layers: [
     {"name": "linear", "in": 768, "out": 192},
     {"name": relu},
@@ -14,12 +13,12 @@ model_parameters:
     {"name": "linear", "in": 48, "out": 12},
     {"name": relu},
     {"name": "linear", "in": 12, "out": 3},
-    {"name": "softmax"}
   ]
 
 training_parameters:
   validation_size: 0.2      # A percentage between 0 and 1
-  batch_size: 32
-  learning_rate: 0.000001
+  batch_size: 1
+  learning_rate: 0.00001
+  optimizer: SGD            # SGD or ADAM
   scheduler:                # Leave empty to disable
   num_epochs: 5

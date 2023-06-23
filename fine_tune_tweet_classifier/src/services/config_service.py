@@ -34,10 +34,6 @@ class ConfigService(metaclass=Singleton):
         return self.config["config"]["model_parameters"]["bert_model_name"]
 
     @property
-    def num_classes(self):
-        return self.config["config"]["model_parameters"]["num_classses"]
-
-    @property
     def layers(self):
         return self.config["config"]["model_parameters"]["layers"]
 
@@ -53,6 +49,10 @@ class ConfigService(metaclass=Singleton):
     def learning_rate(self):
         return self.config["config"]["training_parameters"]["learning_rate"]
 
+    @property
+    def optimizer(self):
+        return self.config["config"]["training_parameters"]["optimizer"]
+    
     @property
     def lr_scheduler(self):
         return self.config["config"]["training_parameters"]["scheduler"]

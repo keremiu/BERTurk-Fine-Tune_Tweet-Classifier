@@ -8,21 +8,23 @@ import logging
 
 from sklearn.metrics import f1_score, confusion_matrix
 import transformers
+
 import torch
+torch.cuda.empty_cache()        
 
 class Trainer():
     def __init__(self, config_service: ConfigService, data_service: DataService):
         self.config_service = config_service
         self.data_service = data_service
         
-        self.tokenizer = transformers.BertTokenizer.from_pretrained(self.config_service.bert_model_name)
+        self.tokenizer = transformers.AutoTokenizer.from_pretrained(self.config_service.bert_model_name)
         
         self.preprocessor = Preprocessor(self.tokenizer)        
 
         self.device = torch.device(self.config_service.device)
 
-        bert = transformers.BertModel.from_pretrained(self.config_service.bert_model_name)
-        self.model = BERTModel(bert, self.config_service.layers, self.config_service.num_classes).to(self.device)
+        bert = transformers.AutoModel.from_pretrained(self.config_service.bert_model_name)
+        self.model = BERTModel(bert, self.config_service.layers).to(self.device)
 
     def test(self):
         labeled_tweets = self.data_service.read_test_tweets()
@@ -62,10 +64,16 @@ class Trainer():
         )
 
         loss_fn = torch.nn.CrossEntropyLoss().to(self.device)
-        optimizer = torch.optim.Adam(self.model.parameters(), lr=self.config_service.learning_rate)
+
+        if self.config_service.optimizer == "ADAM":
+            optimizer = torch.optim.Adam(self.model.parameters(), lr=self.config_service.learning_rate)
+        elif self.config_service.optimizer == "SGD":
+            optimizer = torch.optim.SGD(self.model.parameters(), lr=self.config_service.learning_rate)
+        else:
+            raise Exception("The optimizer must be specified either as 'ADAM' or as 'SGD'. See 'fine_tune_tweet_classifier/src/configs/config.yaml'")
 
         if self.config_service.lr_scheduler != None:
-            ...
+            ... #TODO
 
         for epoch in range(1, self.config_service.num_epochs+1):
             training_loss = 0

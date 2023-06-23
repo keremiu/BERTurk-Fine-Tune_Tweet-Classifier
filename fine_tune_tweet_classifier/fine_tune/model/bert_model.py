@@ -2,16 +2,15 @@ import transformers
 import torch.nn
 
 class BERTModel(torch.nn.Module):
-    def __init__(self, bert: transformers.BertModel, layer_infos: list[dict], num_classes:int):
+    def __init__(self, bert: transformers.BertModel, layer_infos: list[dict]):
         super(BERTModel, self).__init__()
-        self.num_classes = num_classes
 
         self.bert = bert
         
-        self.layers = [
+        self.layers = torch.nn.ModuleList([
             self.get_layer(layer_info)
             for layer_info in layer_infos
-        ]
+        ])
 
     def get_layer(self, layer_info: dict):            
         if layer_info["name"] == "linear":
@@ -21,7 +20,7 @@ class BERTModel(torch.nn.Module):
             layer = torch.nn.Dropout(layer_info["p"])
 
         elif layer_info["name"] == "softmax":
-            layer = torch.nn.Softmax(dim=self.num_classes)
+            layer = torch.nn.Softmax(dim=1)
         elif layer_info["name"] == "relu":
             layer = torch.nn.ReLU()
 
