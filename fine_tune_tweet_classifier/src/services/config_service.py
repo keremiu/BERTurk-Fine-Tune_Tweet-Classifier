@@ -49,6 +49,10 @@ class ConfigService(metaclass=Singleton):
         return self.config["config"]["training_parameters"]["learning_rate"]
 
     @property
+    def class_weights(self):
+        return self.config["config"]["training_parameters"]["class_weights"]
+
+    @property
     def optimizer(self):
         return self.config["config"]["training_parameters"]["optimizer"]
     

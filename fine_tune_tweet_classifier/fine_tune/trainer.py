@@ -76,7 +76,10 @@ class Trainer():
             batch_size=self.config_service.batch_size
         )
 
-        loss_fn = torch.nn.CrossEntropyLoss(weight=torch.tensor(class_weights)).to(self.device)
+        if self.config_service.class_weights == True:
+            loss_fn = torch.nn.CrossEntropyLoss(weight=torch.tensor(class_weights)).to(self.device)
+        else:
+            loss_fn = torch.nn.CrossEntropyLoss(weight=torch.tensor(class_weights)).to(self.device)
 
         if self.config_service.optimizer == "ADAM":
             optimizer = torch.optim.Adam(self.model.parameters(), lr=self.config_service.learning_rate)
