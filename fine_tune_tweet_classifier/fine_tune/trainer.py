@@ -57,13 +57,13 @@ class Trainer():
     def train(self):
         labeled_tweets = self.data_service.read_training_tweets()
 
-        train_dataloader, validation_dataloader = self.preprocessor.prepare_inputs(
+        train_dataloader, validation_dataloader, class_weights = self.preprocessor.prepare_inputs(
             labeled_tweets=labeled_tweets, 
             validation_size=self.config_service.validation_size, 
             batch_size=self.config_service.batch_size
         )
 
-        loss_fn = torch.nn.CrossEntropyLoss().to(self.device)
+        loss_fn = torch.nn.CrossEntropyLoss(weight=torch.tensor(class_weights)).to(self.device)
 
         if self.config_service.optimizer == "ADAM":
             optimizer = torch.optim.Adam(self.model.parameters(), lr=self.config_service.learning_rate)

@@ -18,7 +18,7 @@ model_parameters:
 training_parameters:
   validation_size: 0.2      # A percentage between 0 and 1
   batch_size: 1
-  learning_rate: 0.00001
+  learning_rate: 0.000001
   optimizer: SGD            # SGD or ADAM
   scheduler:                # Leave empty to disable
   num_epochs: 5

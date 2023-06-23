@@ -4,6 +4,7 @@ import logging
 
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
+from sklearn.utils import compute_class_weight
 from torch.utils.data import DataLoader
 import transformers
 import pandas
@@ -88,4 +89,11 @@ class Preprocessor():
         train_dataloader = DataLoader(train_dataset, batch_size=batch_size)
         validation_dataloader = DataLoader(validation_dataset, batch_size=batch_size)
 
-        return train_dataloader, validation_dataloader
+        # Compute class weights
+        class_weights = compute_class_weight(
+            class_weight="balanced",
+            classes=list(set(train_dataset.labels)),
+            y=train_dataset.labels
+        )
+
+        return train_dataloader, validation_dataloader, class_weights
