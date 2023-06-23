@@ -23,4 +23,4 @@ training_parameters:
   learning_rate: 0.000001
   optimizer: SGD            # SGD or ADAM
   scheduler:                # Leave empty to disable
-  num_epochs: 0
+  num_epochs: 1

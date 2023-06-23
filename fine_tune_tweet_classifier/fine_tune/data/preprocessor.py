@@ -25,7 +25,7 @@ class Preprocessor():
         return encoded_labels
 
     def reverse_encoded_label(self, argument: list):
-        return self.label_encoder.inverse_transform(list(argument))
+        return self.label_encoder.inverse_transform(argument)
 
     def remove_emojis(self, series_text: pandas.Series):
         emoji_pattern = re.compile(

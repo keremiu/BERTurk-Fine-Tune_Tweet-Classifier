@@ -10,6 +10,8 @@ import logging
 
 from sklearn.metrics import f1_score, confusion_matrix
 import transformers
+import platform
+import pandas
 import shutil
 import os
 
@@ -63,6 +65,9 @@ class Trainer():
 
 
     def train(self):
+        DEMO_PATH = Globals.artifacts_path.joinpath("demo")
+        os.makedirs(DEMO_PATH)
+    
         labeled_tweets = self.data_service.read_training_tweets()
 
         train_dataloader, validation_dataloader, class_weights = self.preprocessor.prepare_inputs(
@@ -106,17 +111,23 @@ class Trainer():
             validation_loss = 0
             validation_preds = []
             validation_labels = []
+            validation_texts = []
 
             self.model.eval()
-            for val_input_ids, val_attention_masks, val_labels, _ in validation_dataloader:
+            for val_input_ids, val_attention_masks, val_labels, val_texts in validation_dataloader:
                 val_outputs = self.model(val_input_ids.to(self.device), val_attention_masks.to(self.device))
 
-                val_loss = loss_fn(val_outputs, val_labels.to(self.device))
-                validation_loss += val_loss.item()
+                try:
+                    val_loss = loss_fn(val_outputs, val_labels.to(self.device))
+                    validation_loss += val_loss.item()
+                except:
+                    pass
 
                 validation_labels += val_labels.argmax(axis=1).tolist()
                 validation_preds += val_outputs.argmax(axis=1).tolist()
-            
+                
+                validation_texts += list(val_texts)
+
             training_f1 = f1_score(training_labels, training_preds, average="macro")
             validation_f1 = f1_score(validation_labels, validation_preds, average="macro")
             validation_confusion_matrix = confusion_matrix(validation_labels, validation_preds)
@@ -128,9 +139,19 @@ class Trainer():
             logging.info(info)
             print(info)
 
+            validation_demo = pandas.DataFrame(list(zip( validation_texts, validation_labels, validation_preds)), columns=["text", "label", "prediction"])
+            validation_demo.prediction = validation_demo.prediction.apply(lambda x: self.preprocessor.reverse_encoded_label([x])[0])
+            validation_demo.label = validation_demo.label.apply(lambda x: self.preprocessor.reverse_encoded_label([x])[0])
+            if os.name == "nt":
+                validation_demo.to_excel(DEMO_PATH.joinpath(f"epoch{epoch}_demo.xlsx"), index=False)
+            elif sys.platform == "darwin":
+                validation_demo.to_excel(DEMO_PATH.joinpath(f"epoch{epoch}_demo.xlsx"), index=False)
+            elif sys.platform.startswith("linux"):
+                validation_demo.to_csv(DEMO_PATH.joinpath(f"epoch{epoch}_demo.csv"), index=False)
+        
         # Create the directory for saving the model & the configurations
         model_save_directory = Globals.artifacts_path.joinpath("model")
-        os.makedirs(model_save_directory)
+        os.makedirs(model_save_directory, exist_ok=True)
 
         # Save the configurations for reproducibility
         shutil.copy(Globals.project_path.joinpath("src", "configs", "config.yaml"), model_save_directory.joinpath("config.yaml"))
