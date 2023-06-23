@@ -1,3 +1,5 @@
+from src.utils.globals import Globals
+
 from src.services.config_service import ConfigService
 from src.services.data_service import DataService
 
@@ -8,6 +10,8 @@ import logging
 
 from sklearn.metrics import f1_score, confusion_matrix
 import transformers
+import shutil
+import os
 
 import torch
 torch.cuda.empty_cache()        
@@ -37,6 +41,10 @@ class Trainer():
 
         labels = []
         preds = []
+
+        # Load model
+        MODEL_PATH = self.config_service.model_path if self.config_service.model_path != None else Globals.artifacts_path.joinpath("model", "bert_model.pt")
+        self.model.load_state_dict(torch.load(MODEL_PATH))
 
         self.model.eval()
         for test_input_ids, test_attention_masks, test_label, test_text in test_dataloader:
@@ -119,3 +127,16 @@ class Trainer():
             
             logging.info(info)
             print(info)
+
+        # Create the directory for saving the model & the configurations
+        model_save_directory = Globals.artifacts_path.joinpath("model")
+        os.makedirs(model_save_directory)
+
+        # Save the configurations for reproducibility
+        shutil.copy(Globals.project_path.joinpath("src", "configs", "config.yaml"), model_save_directory.joinpath("config.yaml"))
+
+        # Save the model's .py file
+        shutil.copy(Globals.project_path.joinpath("fine_tune", "model", "bert_model.py"), model_save_directory.joinpath("bert_model.py"))
+
+        # Save the model's .pt file
+        torch.save(self.model.state_dict(), model_save_directory.joinpath("bert_model.pt"))

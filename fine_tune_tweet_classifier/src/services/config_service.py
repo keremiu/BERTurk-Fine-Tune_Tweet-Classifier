@@ -1,7 +1,6 @@
 from src.utils.singleton import Singleton
 
 import pathlib
-import uuid
 import yaml
 import os
 
@@ -19,11 +18,11 @@ class ConfigService(metaclass=Singleton):
 
     @property
     def training_tweets_csv_path(self):
-        return self.config["config"]["training_tweets_csv_path"]
+        return pathlib.Path(self.config["config"]["training_tweets_csv_path"])
 
     @property
     def test_tweets_csv_path(self):
-        return self.config["config"]["test_tweets_csv_path"]
+        return pathlib.Path(self.config["config"]["test_tweets_csv_path"])
     
     @property
     def device(self):
