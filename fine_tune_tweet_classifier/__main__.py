@@ -20,6 +20,7 @@ def main(app_container: AppContainer):
     configure_logger()
 
     app_container.trainer.train()
+    app_container.trainer.test()
 
 
 if __name__ == "__main__":

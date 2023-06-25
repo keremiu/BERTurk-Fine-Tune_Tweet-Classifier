@@ -30,43 +30,16 @@ class Trainer():
         self.device = torch.device(self.config_service.device)
 
         bert = transformers.AutoModel.from_pretrained(self.config_service.bert_model_name)
-        self.model = BERTModel(bert, self.config_service.layers).to(self.device)
-
-    def test(self):
-        labeled_tweets = self.data_service.read_test_tweets()
-        
-        test_dataloader, _ = self.preprocessor.prepare_inputs(
-            labeled_tweets=labeled_tweets, 
-            validation_size=1, 
-            batch_size=1
-        )
-
-        labels = []
-        preds = []
-
-        # Load model
-        MODEL_PATH = self.config_service.model_path if self.config_service.model_path != None else Globals.artifacts_path.joinpath("model", "bert_model.pt")
-        self.model.load_state_dict(torch.load(MODEL_PATH))
-
-        self.model.eval()
-        for test_input_ids, test_attention_masks, test_label, test_text in test_dataloader:
-            test_output = self.model(test_input_ids.to(self.device), test_attention_masks.to(self.device))
-
-            labels.append(test_label.argmax().item())
-            preds.append(test_output.argmax().item())
-
-            info = f"Text: {test_text}\nLabel: {test_label}\nOutput: {test_output.argmax(axis=1)}\n"
-            print(info)
-            logging.info(info)
-
-        end_info = f"Test F1 Score: {f1_score(labels, preds, average='macro')}\nTest Confusion Matrix: {confusion_matrix(labels, preds)}"
-        print(end_info)
-        logging.info(end_info)        
-
+        self.model = BERTModel(bert, self.config_service.layers).to(self.device)   
 
     def train(self):
-        DEMO_PATH = Globals.artifacts_path.joinpath("demo")
-        os.makedirs(DEMO_PATH)
+        # Create the directory for saving the model & the configurations
+        MODEL_DIR = Globals.artifacts_path.joinpath("model")
+        os.makedirs(MODEL_DIR, exist_ok=True)
+
+        # Create the directory for saving the validation demos
+        DEMO_DIR = Globals.artifacts_path.joinpath("validation_demo")
+        os.makedirs(DEMO_DIR, exist_ok=True)
     
         labeled_tweets = self.data_service.read_training_tweets()
 
@@ -143,19 +116,60 @@ class Trainer():
             validation_demo.prediction = validation_demo.prediction.apply(lambda x: self.preprocessor.reverse_encoded_label([x])[0])
             validation_demo.label = validation_demo.label.apply(lambda x: self.preprocessor.reverse_encoded_label([x])[0])
             if os.name == "nt" or sys.platform == "darwin":
-                validation_demo.to_excel(DEMO_PATH.joinpath(f"epoch{epoch}_demo.xlsx"), index=False)
+                validation_demo.to_excel(DEMO_DIR.joinpath(f"epoch{epoch}_demo.xlsx"), index=False)
             else:
-                validation_demo.to_csv(DEMO_PATH.joinpath(f"epoch{epoch}_demo.csv"), index=False)
+                validation_demo.to_csv(DEMO_DIR.joinpath(f"epoch{epoch}_demo.csv"), index=False)
         
-        # Create the directory for saving the model & the configurations
-        model_save_directory = Globals.artifacts_path.joinpath("model")
-        os.makedirs(model_save_directory, exist_ok=True)
-
         # Save the configurations for reproducibility
-        shutil.copy(Globals.project_path.joinpath("src", "configs", "config.yaml"), model_save_directory.joinpath("config.yaml"))
+        shutil.copy(Globals.project_path.joinpath("src", "configs", "config.yaml"), MODEL_DIR.joinpath("config.yaml"))
 
         # Save the model's .py file
-        shutil.copy(Globals.project_path.joinpath("fine_tune", "model", "bert_model.py"), model_save_directory.joinpath("bert_model.py"))
+        shutil.copy(Globals.project_path.joinpath("fine_tune", "model", "bert_model.py"), MODEL_DIR.joinpath("bert_model.py"))
 
         # Save the model's .pt file
-        torch.save(self.model.state_dict(), model_save_directory.joinpath("bert_model.pt"))
+        torch.save(self.model.state_dict(), MODEL_DIR.joinpath("bert_model.pt"))
+
+    def test(self):
+        DEMO_PATH = Globals.artifacts_path.joinpath("test_demo")
+        os.makedirs(DEMO_PATH, exist_ok=True)
+
+        labeled_tweets = self.data_service.read_test_tweets()
+        
+        test_dataloader, _, _ = self.preprocessor.prepare_inputs(
+            labeled_tweets=labeled_tweets, 
+            validation_size=1, 
+            batch_size=self.config_service.batch_size
+        )
+
+        labels = []
+        preds = []
+        texts = []
+
+        # Load model
+        MODEL_PATH = self.config_service.model_path if self.config_service.model_path != None else Globals.artifacts_path.joinpath("model", "bert_model.pt")
+        self.model.load_state_dict(torch.load(MODEL_PATH))
+
+        self.model.eval()
+        for test_input_ids, test_attention_masks, test_labels, test_texts in test_dataloader:
+            test_outputs = self.model(test_input_ids.to(self.device), test_attention_masks.to(self.device))
+
+            labels += test_labels.argmax(axis=1).tolist()
+            preds += test_outputs.argmax(axis=1).tolist()
+
+            texts += list(test_texts)
+
+        test_f1 = f1_score(labels, preds, average="macro")
+        test_confusion_matrix = confusion_matrix(labels, preds)
+        info =  f"Test F1 Score:\t{test_f1}\n" \
+                f"Test Confusion Matrix:\n{test_confusion_matrix}\n"
+        
+        logging.info(info)
+        print(info)
+
+        test_demo = pandas.DataFrame(list(zip(texts, labels, preds)), columns=["text", "label", "prediction"])
+        test_demo.prediction = test_demo.prediction.apply(lambda x: self.preprocessor.reverse_encoded_label([x])[0])
+        test_demo.label = test_demo.label.apply(lambda x: self.preprocessor.reverse_encoded_label([x])[0])
+        if os.name == "nt" or sys.platform == "darwin":
+            test_demo.to_excel(DEMO_PATH.joinpath(f"demo.xlsx"), index=False)
+        else:
+            test_demo.to_csv(DEMO_PATH.joinpath(f"demo.csv"), index=False)

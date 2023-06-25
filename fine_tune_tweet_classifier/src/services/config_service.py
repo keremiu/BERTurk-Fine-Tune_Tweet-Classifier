@@ -25,6 +25,14 @@ class ConfigService(metaclass=Singleton):
         return pathlib.Path(self.config["config"]["test_tweets_csv_path"])
     
     @property
+    def model_path(self):
+        try:
+            return pathlib.Path(self.config["config"]["model_path"])
+        except TypeError:
+            return None
+    
+    
+    @property
     def device(self):
         return self.config["config"]["device"]
 
