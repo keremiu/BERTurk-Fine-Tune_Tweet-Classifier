@@ -15,7 +15,7 @@ class Preprocessor():
         self.tokenizer = tokenizer
         self.encoding_indices: dict
 
-    def encode_labels(self, labels: pandas.Series, return_class_weights: bool):
+    def encode_labels(self, labels: pandas.Series):
         unique_labels = labels.apply(
             lambda x: re.sub(r'[ \'\[\]]', '', x).split(",")    # Labels are converted to list objects from strings
         ).explode().unique()                                    # Then the unique elements in all of those lists are obtained
@@ -25,18 +25,10 @@ class Preprocessor():
         df_one_hot = pandas.DataFrame(0, index=numpy.arange(len(labels)), columns=unique_labels)
         df_one_hot["label"] = labels
         
-        class_weights = []
-        num_entries = len(df_one_hot)
         for unique_label in unique_labels:
             df_one_hot.loc[df_one_hot.label.str.contains(unique_label), unique_label] = 1  
-
-            pos_weight = sum(df_one_hot[unique_label] == 1) / num_entries
-            class_weights.append(pos_weight)
-
-        if return_class_weights == True:
-            return df_one_hot[unique_labels].values.tolist(), class_weights
-        else:
-            return df_one_hot[unique_labels].values.tolist()
+    
+        return df_one_hot[unique_labels].values.tolist()
 
     def decode_labels(self, argument: list):
         decoded_labels = [self.encoding_indices[index] for index, value in enumerate(argument) if value == 1]
@@ -72,7 +64,7 @@ class Preprocessor():
 
     def prepare_inputs(self, labeled_tweets: pandas.DataFrame, validation_size: float, batch_size: int):
         # Encode labels
-        labeled_tweets["label"], class_weights = self.encode_labels(labeled_tweets["label"], return_class_weights=True)
+        labeled_tweets["label"] = self.encode_labels(labeled_tweets["label"])
 
         # Remove emojis
         labeled_tweets["text"] = self.remove_emojis(labeled_tweets["text"])
@@ -104,5 +96,9 @@ class Preprocessor():
         # Initialize dataloaders
         train_dataloader = DataLoader(train_dataset, batch_size=batch_size)
         validation_dataloader = DataLoader(validation_dataset, batch_size=batch_size)
+
+        # Calculate Class Weights
+        df_training_one_hot = pandas.DataFrame(train_dataset.labels)
+        class_weights = [sum(df_training_one_hot[column] == 0) / sum(df_training_one_hot[column] == 1) for column in df_training_one_hot.columns]
 
         return train_dataloader, validation_dataloader, class_weights
