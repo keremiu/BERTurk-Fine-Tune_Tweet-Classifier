@@ -1,4 +1,4 @@
-training_tweets_csv_path: training_tweets.csv
+training_tweets_csv_path: training_multilabel.csv
 test_tweets_csv_path: test_tweets.csv
 
 model_path:                 # Leave empty if you want to use the default path of the process
@@ -8,13 +8,13 @@ device: cuda
 model_parameters:
   bert_model_name: dbmdz/bert-base-turkish-128k-cased
   layers: [
-    {"name": "linear", "in": 768, "out": 192},
+    {"name": "linear", "in": 768, "out": 384},
     {"name": "relu"},
-    {"name": "linear", "in": 192, "out": 48},
+    {"name": "linear", "in": 384, "out": 192},
     {"name": "relu"},
-    {"name": "linear", "in": 48, "out": 12},
+    {"name": "linear", "in": 192, "out": 96},
     {"name": "relu"},
-    {"name": "linear", "in": 12, "out": 3},
+    {"name": "linear", "in": 96, "out": 29},
   ]
 
 training_parameters:
@@ -25,3 +25,6 @@ training_parameters:
   optimizer: ADAM           # SGD or ADAM
   scheduler:                # Leave empty to disable
   num_epochs: 5
+
+evaluation_parameters:
+  threshold: 0.5

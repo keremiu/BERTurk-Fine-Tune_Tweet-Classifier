@@ -8,7 +8,7 @@ from .data.preprocessor import Preprocessor
 
 import logging
 
-from sklearn.metrics import f1_score, confusion_matrix
+from sklearn.metrics import f1_score, multilabel_confusion_matrix
 import transformers
 import pandas
 import shutil
@@ -50,9 +50,9 @@ class Trainer():
         )
 
         if self.config_service.class_weights == True:
-            loss_fn = torch.nn.CrossEntropyLoss(weight=torch.tensor(class_weights)).to(self.device)
+            loss_fn = torch.nn.BCEWithLogitsLoss(pos_weight=torch.tensor(class_weights)).to(self.device)
         else:
-            loss_fn = torch.nn.CrossEntropyLoss(weight=torch.tensor(class_weights)).to(self.device)
+            loss_fn = torch.nn.BCEWithLogitsLoss().to(self.device)
 
         if self.config_service.optimizer == "ADAM":
             optimizer = torch.optim.Adam(self.model.parameters(), lr=self.config_service.learning_rate)
@@ -73,15 +73,17 @@ class Trainer():
             for input_ids, attention_masks, labels, _ in train_dataloader:
                 outputs = self.model(input_ids.to(self.device), attention_masks.to(self.device))
 
-                loss = loss_fn(outputs, labels.to(self.device))
+                loss = loss_fn(outputs, labels.float().to(self.device))
                 training_loss += loss.item()
-
-                training_labels += labels.argmax(axis=1).tolist()
-                training_preds += outputs.detach().argmax(axis=1).tolist()
 
                 self.model.zero_grad()
                 loss.backward()
                 optimizer.step()
+
+                training_labels += labels.tolist()
+                outputs[outputs >= self.config_service.threshold] = 1
+                outputs[outputs < self.config_service.threshold] = 0
+                training_preds += outputs.int().tolist()
 
 
             validation_loss = 0
@@ -93,17 +95,19 @@ class Trainer():
             for val_input_ids, val_attention_masks, val_labels, val_texts in validation_dataloader:
                 val_outputs = self.model(val_input_ids.to(self.device), val_attention_masks.to(self.device))
 
-                val_loss = loss_fn(val_outputs, val_labels.to(self.device))
+                val_loss = loss_fn(val_outputs, val_labels.float().to(self.device))
                 validation_loss += val_loss.item()
 
-                validation_labels += val_labels.argmax(axis=1).tolist()
-                validation_preds += val_outputs.argmax(axis=1).tolist()
+                validation_labels += val_labels.tolist()
+                val_outputs[val_outputs >= self.config_service.threshold] = 1
+                val_outputs[val_outputs < self.config_service.threshold] = 0
+                validation_preds += val_outputs.int().tolist()
                 
                 validation_texts += list(val_texts)
 
             training_f1 = f1_score(training_labels, training_preds, average="macro")
             validation_f1 = f1_score(validation_labels, validation_preds, average="macro")
-            validation_confusion_matrix = confusion_matrix(validation_labels, validation_preds)
+            validation_confusion_matrix = multilabel_confusion_matrix(validation_labels, validation_preds)
             info = f"Epoch: {epoch}\n" \
                    f"Validation F1 Score:\t{validation_f1}\t|\tValidation Loss: {validation_loss/len(validation_dataloader)}\n" \
                    f"Training F1 Score:\t{training_f1}\t|\tTraining Loss: {training_loss/len(train_dataloader)}\n" \
@@ -113,8 +117,8 @@ class Trainer():
             print(info)
 
             validation_demo = pandas.DataFrame(list(zip( validation_texts, validation_labels, validation_preds)), columns=["text", "label", "prediction"])
-            validation_demo.prediction = validation_demo.prediction.apply(lambda x: self.preprocessor.reverse_encoded_label([x])[0])
-            validation_demo.label = validation_demo.label.apply(lambda x: self.preprocessor.reverse_encoded_label([x])[0])
+            validation_demo.prediction = validation_demo.prediction.apply(lambda x: self.preprocessor.decode_labels(x))
+            validation_demo.label = validation_demo.label.apply(lambda x: self.preprocessor.decode_labels(x))
             if os.name == "nt" or sys.platform == "darwin":
                 validation_demo.to_excel(DEMO_DIR.joinpath(f"epoch{epoch}_demo.xlsx"), index=False)
             else:
@@ -153,13 +157,15 @@ class Trainer():
         for test_input_ids, test_attention_masks, test_labels, test_texts in test_dataloader:
             test_outputs = self.model(test_input_ids.to(self.device), test_attention_masks.to(self.device))
 
-            labels += test_labels.argmax(axis=1).tolist()
-            preds += test_outputs.argmax(axis=1).tolist()
+            labels += test_labels.tolist()
+            test_outputs[test_outputs >= self.config_service.threshold] = 1
+            test_outputs[test_outputs < self.config_service.threshold] = 0
+            preds += test_outputs.int().tolist()
 
             texts += list(test_texts)
 
         test_f1 = f1_score(labels, preds, average="macro")
-        test_confusion_matrix = confusion_matrix(labels, preds)
+        test_confusion_matrix = multilabel_confusion_matrix(labels, preds)
         info =  f"Test F1 Score:\t{test_f1}\n" \
                 f"Test Confusion Matrix:\n{test_confusion_matrix}\n"
         
@@ -167,8 +173,8 @@ class Trainer():
         print(info)
 
         test_demo = pandas.DataFrame(list(zip(texts, labels, preds)), columns=["text", "label", "prediction"])
-        test_demo.prediction = test_demo.prediction.apply(lambda x: self.preprocessor.reverse_encoded_label([x])[0])
-        test_demo.label = test_demo.label.apply(lambda x: self.preprocessor.reverse_encoded_label([x])[0])
+        test_demo.prediction = test_demo.prediction.apply(lambda x: self.preprocessor.decode_labels(x))
+        test_demo.label = test_demo.label.apply(lambda x: self.preprocessor.decode_labels(x))
         if os.name == "nt" or sys.platform == "darwin":
             test_demo.to_excel(DEMO_PATH.joinpath(f"demo.xlsx"), index=False)
         else:

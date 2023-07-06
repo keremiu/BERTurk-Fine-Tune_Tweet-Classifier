@@ -3,29 +3,45 @@ from .tweet_dataset import TweetDataset
 import logging
 
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import LabelEncoder
 from sklearn.utils import compute_class_weight
 from torch.utils.data import DataLoader
 import transformers
 import pandas
+import numpy
 import re
 
 class Preprocessor():
     def __init__(self, tokenizer: transformers.BertTokenizer):
         self.tokenizer = tokenizer
-        self.label_encoder = LabelEncoder()
+        self.encoding_indices: dict
 
-    def encode_labels(self, labels: pandas.Series):
-        encoded_labels = self.label_encoder.fit_transform(labels)
+    def encode_labels(self, labels: pandas.Series, return_class_weights: bool):
+        unique_labels = labels.apply(
+            lambda x: re.sub(r'[ \'\[\]]', '', x).split(",")    # Labels are converted to list objects from strings
+        ).explode().unique()                                    # Then the unique elements in all of those lists are obtained
 
-        encoded_labels_mapping = {label: encode for encode, label in enumerate(self.label_encoder.classes_)}
-        logging.info(f"Encoded Labels: {encoded_labels_mapping}")
-        print(f"Encoded Labels: {encoded_labels_mapping}")
+        self.encoding_indices = {index: label for index, label in enumerate(unique_labels)}
 
-        return encoded_labels
+        df_one_hot = pandas.DataFrame(0, index=numpy.arange(len(labels)), columns=unique_labels)
+        df_one_hot["label"] = labels
+        
+        class_weights = []
+        num_entries = len(df_one_hot)
+        for unique_label in unique_labels:
+            df_one_hot.loc[df_one_hot.label.str.contains(unique_label), unique_label] = 1  
 
-    def reverse_encoded_label(self, argument: list):
-        return self.label_encoder.inverse_transform(argument)
+            pos_weight = sum(df_one_hot[unique_label] == 1) / num_entries
+            class_weights.append(pos_weight)
+
+        if return_class_weights == True:
+            return df_one_hot[unique_labels].values.tolist(), class_weights
+        else:
+            return df_one_hot[unique_labels].values.tolist()
+
+    def decode_labels(self, argument: list):
+        decoded_labels = [self.encoding_indices[index] for index, value in enumerate(argument) if value == 1]
+        
+        return decoded_labels
 
     def remove_emojis(self, series_text: pandas.Series):
         emoji_pattern = re.compile(
@@ -56,7 +72,7 @@ class Preprocessor():
 
     def prepare_inputs(self, labeled_tweets: pandas.DataFrame, validation_size: float, batch_size: int):
         # Encode labels
-        labeled_tweets["label"] = self.encode_labels(labeled_tweets["label"])
+        labeled_tweets["label"], class_weights = self.encode_labels(labeled_tweets["label"], return_class_weights=True)
 
         # Remove emojis
         labeled_tweets["text"] = self.remove_emojis(labeled_tweets["text"])
@@ -88,12 +104,5 @@ class Preprocessor():
         # Initialize dataloaders
         train_dataloader = DataLoader(train_dataset, batch_size=batch_size)
         validation_dataloader = DataLoader(validation_dataset, batch_size=batch_size)
-
-        # Compute class weights
-        class_weights = compute_class_weight(
-            class_weight="balanced",
-            classes=list(set(train_dataset.labels)),
-            y=train_dataset.labels
-        )
 
         return train_dataloader, validation_dataloader, class_weights

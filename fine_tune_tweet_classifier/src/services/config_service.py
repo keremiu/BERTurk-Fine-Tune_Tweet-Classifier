@@ -72,3 +72,6 @@ class ConfigService(metaclass=Singleton):
     def num_epochs(self):
         return self.config["config"]["training_parameters"]["num_epochs"]
     
+    @property
+    def threshold(self):
+        return self.config["config"]["evaluation_parameters"]["threshold"]
