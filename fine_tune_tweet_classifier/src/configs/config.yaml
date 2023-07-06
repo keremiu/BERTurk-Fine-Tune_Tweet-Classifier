@@ -9,11 +9,11 @@ model_parameters:
   bert_model_name: dbmdz/bert-base-turkish-128k-cased
   layers: [
     {"name": "linear", "in": 768, "out": 192},
-    {"name": relu},
+    {"name": "relu"},
     {"name": "linear", "in": 192, "out": 48},
-    {"name": relu},
+    {"name": "relu"},
     {"name": "linear", "in": 48, "out": 12},
-    {"name": relu},
+    {"name": "relu"},
     {"name": "linear", "in": 12, "out": 3},
   ]
 

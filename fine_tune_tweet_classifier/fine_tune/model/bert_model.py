@@ -21,6 +21,8 @@ class BERTModel(torch.nn.Module):
 
         elif layer_info["name"] == "softmax":
             layer = torch.nn.Softmax(dim=1)
+        elif layer_info["name"] == "sigmoid":
+            layer = torch.nn.Sigmoid()
         elif layer_info["name"] == "relu":
             layer = torch.nn.ReLU()
 
