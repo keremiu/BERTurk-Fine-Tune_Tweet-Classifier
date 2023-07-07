@@ -133,6 +133,9 @@ class Trainer():
         # Save the model's .pt file
         torch.save(self.model.state_dict(), MODEL_DIR.joinpath("bert_model.pt"))
 
+        logging.info(f"Model saved at: '{MODEL_DIR.joinpath('bert_model.pt')}'")
+        print(f"Model saved at: '{MODEL_DIR.joinpath('bert_model.pt')}'")
+
     def test(self):
         DEMO_PATH = Globals.artifacts_path.joinpath("test_demo")
         os.makedirs(DEMO_PATH, exist_ok=True)
@@ -179,3 +182,6 @@ class Trainer():
             test_demo.to_excel(DEMO_PATH.joinpath(f"demo.xlsx"), index=False)
         else:
             test_demo.to_csv(DEMO_PATH.joinpath(f"demo.csv"), index=False)
+
+        logging.info(f"Test Demo saved at: '{DEMO_PATH.joinpath('demo.xlsx')}'")
+        print(f"Test Demo saved at: '{DEMO_PATH.joinpath('demo.xlsx')}'")

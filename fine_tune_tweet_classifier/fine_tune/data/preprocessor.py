@@ -13,14 +13,18 @@ import re
 class Preprocessor():
     def __init__(self, tokenizer: transformers.BertTokenizer):
         self.tokenizer = tokenizer
-        self.encoding_indices: dict
+        self.encoding_indices: dict     # A dictionary that keeps track of which index in the one hot encoding arrays corresponds to which label.
 
     def encode_labels(self, labels: pandas.Series):
+        """
+            Unique labels are identified and one hot encoded. Works on both uni-label and multi-label data
+        """
+
         unique_labels = labels.apply(
             lambda x: re.sub(r'[ \'\[\]]', '', x).split(",")    # Labels are converted to list objects from strings
         ).explode().unique()                                    # Then the unique elements in all of those lists are obtained
 
-        self.encoding_indices = {index: label for index, label in enumerate(unique_labels)}
+        self.encoding_indices = {index: label for index, label in enumerate(unique_labels)}     # The index of each label is registered
 
         df_one_hot = pandas.DataFrame(0, index=numpy.arange(len(labels)), columns=unique_labels)
         df_one_hot["label"] = labels
@@ -31,6 +35,11 @@ class Preprocessor():
         return df_one_hot[unique_labels].values.tolist()
 
     def decode_labels(self, argument: list):
+        """
+            Decodes a one hot encoding array into an array of labels
+            ex: [1, 1, 0] -> [mülteci, ekonomi]     |   [0, 0, 1] -> [siyasi-figür] 
+        """
+
         decoded_labels = [self.encoding_indices[index] for index, value in enumerate(argument) if value == 1]
         
         return decoded_labels
@@ -98,6 +107,7 @@ class Preprocessor():
         validation_dataloader = DataLoader(validation_dataset, batch_size=batch_size)
 
         # Calculate Class Weights
+        # "If a dataset contains 100 positive and 300 negative examples of a single class, then pos_weight for the class should be equal to 300/100 = 3"
         df_training_one_hot = pandas.DataFrame(train_dataset.labels)
         class_weights = [sum(df_training_one_hot[column] == 0) / sum(df_training_one_hot[column] == 1) for column in df_training_one_hot.columns]
 

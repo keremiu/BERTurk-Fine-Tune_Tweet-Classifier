@@ -1,15 +1,22 @@
-training_tweets_csv_path: training_multilabel.csv
-test_tweets_csv_path: test_tweets.csv
+training_tweets_csv_path: training_tweets.csv        # This set will be used by the Trainer class' test() method. Validation set will also be fractured out of this dataset
+test_tweets_csv_path: test_tweets.csv                    # A seperate test dataset that will be used by the Trainer class' test() method
 
-model_path:                 # Leave empty if you want to use the default path of the process
+model_path:                 # The model that is going to be used by the Trainer class' test() method. Leave empty if you want to use the model saved by the current process
 
-device: cuda
+device: cuda                # cuda or cpu
 
 model_parameters:
   bert_model_name: dbmdz/bert-base-turkish-128k-cased
-  layers: [
+  layers: [                                               # Data is forwarded into these layers in the order of their indicies
     {"name": "linear", "in": 768, "out": 3},
   ]
+
+# Available Layers: 
+#   Linear:   {'name': 'linear', 'in': input_size, 'out': output_size}
+#   Dropout:  {'name': 'dropout', 'p': dropout_probability}
+#   Softmax:  {'name': 'softmax'}
+#   Sigmoid:  {'name': 'sigmoid'}
+#   ReLU:     {'name': 'relu'}
 
 training_parameters:
   validation_size: 0.2      # A percentage between 0 and 1
