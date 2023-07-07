@@ -13,7 +13,7 @@ class ConfigService(metaclass=Singleton):
             config_name = config_file[:-5]  # Remove .yaml suffix
             config_path = configs.joinpath(config_file) 
             
-            with open(config_path, "r") as cf:
+            with open(config_path, "r", encoding="utf-8") as cf:
                 self.config[config_name] = yaml.safe_load(cf)
 
     @property
