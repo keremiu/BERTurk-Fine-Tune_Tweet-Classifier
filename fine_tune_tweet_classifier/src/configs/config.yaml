@@ -1,5 +1,11 @@
-training_tweets_csv_path: training_tweets.csv        # This set will be used by the Trainer class' test() method. Validation set will also be fractured out of this dataset
-test_tweets_csv_path: test_tweets.csv                    # A seperate test dataset that will be used by the Trainer class' test() method
+training_tweets_csv_path: training_tweets.csv     # This set will be used by the Trainer class' test() method. Validation set will also be fractured out of this dataset
+test_tweets_csv_path: test_tweets.csv             # A seperate test dataset that will be used by the Trainer class' test() method
+
+# Dataset:
+# The dataset must have the two columns of "text" and "label" in which the "text" column contains the tweets and "label" column contains the label(s)
+# Both "text" and "label" columns must hold the string data type
+# If an entry has multiple labels, then the labels in the "label" column should be seperated with a comma (,)
+# A label cannot have blank spaces ( ), quotation marks ('' or "") and brackets ({} or []) in its name. 
 
 model_path:                 # The model that is going to be used by the Trainer class' test() method. Leave empty if you want to use the model saved by the current process
 

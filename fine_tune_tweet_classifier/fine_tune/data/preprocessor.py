@@ -15,16 +15,18 @@ class Preprocessor():
         self.tokenizer = tokenizer
         self.encoding_indices: dict     # A dictionary that keeps track of which index in the one hot encoding arrays corresponds to which label.
 
-    def encode_labels(self, labels: pandas.Series):
+    def encode_labels(self, labels: pandas.Series) -> list[list[int]]:
         """
             Unique labels are identified and one hot encoded. Works on both uni-label and multi-label data
         """
 
         unique_labels = labels.apply(
-            lambda x: re.sub(r'[ \'\[\]]', '', x).split(",")    # Labels are converted to list objects from strings
+            lambda x: re.sub(r'[ \'\[\]\{\}]', '', x).split(",")    # Labels are converted to list objects from strings
         ).explode().unique()                                    # Then the unique elements in all of those lists are obtained
 
         self.encoding_indices = {index: label for index, label in enumerate(unique_labels)}     # The index of each label is registered
+        logging.info(f"Labels: {self.encoding_indices}")
+        print(f"Labels: {self.encoding_indices}")
 
         df_one_hot = pandas.DataFrame(0, index=numpy.arange(len(labels)), columns=unique_labels)
         df_one_hot["label"] = labels
@@ -34,7 +36,7 @@ class Preprocessor():
     
         return df_one_hot[unique_labels].values.tolist()
 
-    def decode_labels(self, argument: list):
+    def decode_labels(self, argument: list) -> list[str]:
         """
             Decodes a one hot encoding array into an array of labels
             ex: [1, 1, 0] -> [mülteci, ekonomi]     |   [0, 0, 1] -> [siyasi-figür] 
@@ -44,7 +46,7 @@ class Preprocessor():
         
         return decoded_labels
 
-    def remove_emojis(self, series_text: pandas.Series):
+    def remove_emojis(self, series_text: pandas.Series) -> pandas.Series:
         emoji_pattern = re.compile(
              "["
             u"\U0001F600-\U0001F64F"  # emoticons
@@ -71,7 +73,7 @@ class Preprocessor():
 
         return series_text.apply(lambda text: emoji_pattern.sub(r'', text))
 
-    def prepare_inputs(self, labeled_tweets: pandas.DataFrame, validation_size: float, batch_size: int):
+    def prepare_inputs(self, labeled_tweets: pandas.DataFrame, validation_size: float, batch_size: int) -> tuple[DataLoader, DataLoader, list[float]]:
         # Encode labels
         labeled_tweets["label"] = self.encode_labels(labeled_tweets["label"])
 
