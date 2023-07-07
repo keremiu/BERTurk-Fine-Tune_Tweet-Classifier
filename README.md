@@ -5,11 +5,11 @@
 A repository for fine tuning BERT models (BERTurk specifically) for multi-label text (tweet) classification. 
 
 ### Dataset
-The dataset must have the columns "text" and "label". \
-The "text" columns contains the tweets and the "label" column contains the labels for that tweet. \
-Both columns must hold string values. \
-If an entry has multiple labels, then the labels should be seperated with a comma (,). \
-A label cannot have blank spaces ( ), quotation marks ('' or "") and brackets ({} or []) in its name. 
+- The dataset must have the columns "text" and "label". 
+- The "text" columns contains the tweets and the "label" column contains the labels for that tweet. 
+- Both columns must hold string values. 
+- If an entry has multiple labels, then the labels should be seperated with a comma (,). 
+- A label cannot have blank spaces ( ), quotation marks ('' or "") and brackets ({} or []) in its name. 
 
 |text|label|
 |----|-----|
