@@ -1,7 +1,7 @@
 openpyxl==3.1.2
 pandas==2.0.2
 PyYAML==6.0
-scikit-learn==1.2.2
-torch==2.0.1+cu118
+scikit-learn==1.2.2 
+#torch==2.0.1+cu118
 tqdm==4.65.0
 transformers==4.30.2

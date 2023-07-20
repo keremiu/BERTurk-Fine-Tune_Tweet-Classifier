@@ -1,0 +1,1 @@
+source ~/OneDrive/BERT/Venv/Scripts/activate
