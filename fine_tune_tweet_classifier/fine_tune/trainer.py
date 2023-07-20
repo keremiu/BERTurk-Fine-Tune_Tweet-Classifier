@@ -15,6 +15,8 @@ import shutil
 import sys
 import os
 
+from tqdm import tqdm
+
 import torch
 torch.cuda.empty_cache()        
 
@@ -70,7 +72,7 @@ class Trainer():
             training_labels = []
 
             self.model.train()
-            for input_ids, attention_masks, labels, _ in train_dataloader:
+            for input_ids, attention_masks, labels, _ in tqdm(train_dataloader, desc=f'Training Epoch {epoch}', unit='batch'):
                 outputs = self.model(input_ids.to(self.device), attention_masks.to(self.device))
 
                 loss = loss_fn(outputs, labels.float().to(self.device))
@@ -92,7 +94,7 @@ class Trainer():
             validation_texts = []
 
             self.model.eval()
-            for val_input_ids, val_attention_masks, val_labels, val_texts in validation_dataloader:
+            for val_input_ids, val_attention_masks, val_labels, val_texts in tqdm(validation_dataloader, desc=f'Validation Epoch {epoch}', unit='batch'):
                 val_outputs = self.model(val_input_ids.to(self.device), val_attention_masks.to(self.device))
 
                 val_loss = loss_fn(val_outputs, val_labels.float().to(self.device))
@@ -157,7 +159,7 @@ class Trainer():
         self.model.load_state_dict(torch.load(MODEL_PATH))
 
         self.model.eval()
-        for test_input_ids, test_attention_masks, test_labels, test_texts in test_dataloader:
+        for test_input_ids, test_attention_masks, test_labels, test_texts in tqdm(test_dataloader, desc='Testing', unit='batch'):
             test_outputs = self.model(test_input_ids.to(self.device), test_attention_masks.to(self.device))
 
             labels += test_labels.tolist()
