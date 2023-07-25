@@ -99,11 +99,10 @@ class Preprocessor():
 
         # Split the data into train and test
         train_tweets, validation_tweets = train_test_split(labeled_tweets, shuffle=True, test_size=validation_size)
-
         # Initialize datasets
+        print(train_tweets["label"])
         train_dataset = TweetDataset(train_tweets["tokens"], train_tweets["label"].to_list(), train_tweets["text"].to_list())
         validation_dataset = TweetDataset(validation_tweets["tokens"], validation_tweets["label"].to_list(), validation_tweets["text"].to_list())
-
         # Initialize dataloaders
         train_dataloader = DataLoader(train_dataset, batch_size=batch_size)
         validation_dataloader = DataLoader(validation_dataset, batch_size=batch_size)

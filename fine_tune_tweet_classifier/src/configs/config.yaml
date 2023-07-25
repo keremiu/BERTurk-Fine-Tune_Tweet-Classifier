@@ -1,5 +1,5 @@
-training_tweets_csv_path: C:\Users\kerem\OneDrive\BERT\BERTurk-Fine-Tune_Tweet-Classifier\df2.csv #training_tweets.csv     # This set will be used by the Trainer class' test() method. Validation set will also be fractured out of this dataset
-test_tweets_csv_path: C:\Users\kerem\OneDrive\BERT\BERTurk-Fine-Tune_Tweet-Classifier\df2.csv #test_tweets.csv             # A seperate test dataset that will be used by the Trainer class' test() method
+training_tweets_csv_path: C:\Users\kerem\OneDrive\BERT\BERTurk-Fine-Tune_Tweet-Classifier\Balanced.csv #training_tweets.csv     # This set will be used by the Trainer class' test() method. Validation set will also be fractured out of this dataset
+test_tweets_csv_path: C:\Users\kerem\OneDrive\BERT\BERTurk-Fine-Tune_Tweet-Classifier\Balanced.csv #test_tweets.csv             # A seperate test dataset that will be used by the Trainer class' test() method
 
 # Dataset:
 # The dataset must have the two columns of "text" and "label" in which the "text" column contains the tweets and "label" column contains the label(s)
@@ -16,7 +16,7 @@ model_parameters:
   layers: [                                               # Data is forwarded into these layers in the order of their indicies
     {"name": "linear", "in": 768, "out": 264},
     {"name": "linear", "in": 264, "out": 80},
-    {"name": "linear", "in": 80, "out": 29},
+    {"name": "linear", "in": 80, "out": 28},
   ]
 
 # Available Layers: 
@@ -33,7 +33,8 @@ training_parameters:
   class_weights: True       # True or False
   optimizer: ADAM           # SGD or ADAM
   scheduler:                # Leave empty to disable
-  num_epochs: 50
+  num_epochs: 40
+  patience: 5
 
 evaluation_parameters:
-  threshold: 0.15
+  threshold: 0.1
