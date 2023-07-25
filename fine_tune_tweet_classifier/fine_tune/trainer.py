@@ -5,6 +5,7 @@ from src.services.data_service import DataService
 
 from .model.bert_model import BERTModel
 from .data.preprocessor import Preprocessor
+import torch.optim.lr_scheduler as lr_scheduler
 
 import logging
 
@@ -14,6 +15,8 @@ import pandas
 import shutil
 import sys
 import os
+
+from tqdm import tqdm
 
 import torch
 torch.cuda.empty_cache()        
@@ -61,16 +64,22 @@ class Trainer():
         else:
             raise Exception("The optimizer must be specified either as 'ADAM' or as 'SGD'. See 'fine_tune_tweet_classifier/src/configs/config.yaml'")
 
-        if self.config_service.lr_scheduler != None:
-            ... #TODO
+        if self.config_service.lr_scheduler == "LinearLR":
+           scheduler = lr_scheduler.LinearLR(optimizer, start_factor=1.0, end_factor=0.5, total_iters=30)
+        elif self.config_service.lr_scheduler == "ExponentialLR":
+           scheduler = lr_scheduler.ExponentialLR(optimizer, gamma=0.99)
 
         for epoch in range(1, self.config_service.num_epochs+1):
             training_loss = 0
             training_preds = []
             training_labels = []
-
+            
+            best_validation_f1 = 0
+            epochs_no_improve = 0
+            patience = self.config_service.patience  # Make sure to set this value in your config
+            
             self.model.train()
-            for input_ids, attention_masks, labels, _ in train_dataloader:
+            for input_ids, attention_masks, labels, _ in tqdm(train_dataloader, desc=f'Training Epoch {epoch}', unit='batch'):
                 outputs = self.model(input_ids.to(self.device), attention_masks.to(self.device))
 
                 loss = loss_fn(outputs, labels.float().to(self.device))
@@ -79,7 +88,8 @@ class Trainer():
                 self.model.zero_grad()
                 loss.backward()
                 optimizer.step()
-
+                if self.config_service.lr_scheduler != None:
+                    scheduler.step()
                 training_labels += labels.tolist()
                 outputs[outputs >= self.config_service.threshold] = 1
                 outputs[outputs < self.config_service.threshold] = 0
@@ -92,7 +102,7 @@ class Trainer():
             validation_texts = []
 
             self.model.eval()
-            for val_input_ids, val_attention_masks, val_labels, val_texts in validation_dataloader:
+            for val_input_ids, val_attention_masks, val_labels, val_texts in tqdm(validation_dataloader, desc=f'Validation Epoch {epoch}', unit='batch'):
                 val_outputs = self.model(val_input_ids.to(self.device), val_attention_masks.to(self.device))
 
                 val_loss = loss_fn(val_outputs, val_labels.float().to(self.device))
@@ -123,7 +133,21 @@ class Trainer():
                 validation_demo.to_excel(DEMO_DIR.joinpath(f"epoch{epoch}_demo.xlsx"), index=False)
             else:
                 validation_demo.to_csv(DEMO_DIR.joinpath(f"epoch{epoch}_demo.csv"), index=False)
-        
+                
+            if validation_f1 > best_validation_f1:
+                best_validation_f1 = validation_f1
+                epochs_no_improve = 0
+                # Save the best model
+                torch.save(self.model.state_dict(), MODEL_DIR.joinpath("best_model.pt"))
+                print("Validation F1 Score improved, saving model...")
+            elif patience is not None:  # If patience is None, we never increment epochs_no_improve or stop early
+                epochs_no_improve += 1
+                print(f"No improvement in Validation F1 Score for {epochs_no_improve} epochs.")
+
+                # If the validation score hasn't improved for 'patience' number of epochs, stop the training
+                if epochs_no_improve == patience:
+                    print('Early stopping!')
+                    break
         # Save the configurations for reproducibility
         shutil.copy(Globals.project_path.joinpath("src", "configs", "config.yaml"), MODEL_DIR.joinpath("config.yaml"))
 
@@ -157,7 +181,7 @@ class Trainer():
         self.model.load_state_dict(torch.load(MODEL_PATH))
 
         self.model.eval()
-        for test_input_ids, test_attention_masks, test_labels, test_texts in test_dataloader:
+        for test_input_ids, test_attention_masks, test_labels, test_texts in tqdm(test_dataloader, desc='Testing', unit='batch'):
             test_outputs = self.model(test_input_ids.to(self.device), test_attention_masks.to(self.device))
 
             labels += test_labels.tolist()

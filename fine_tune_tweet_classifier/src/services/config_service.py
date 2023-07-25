@@ -73,5 +73,9 @@ class ConfigService(metaclass=Singleton):
         return self.config["config"]["training_parameters"]["num_epochs"]
     
     @property
+    def patience(self):
+        return self.config["config"]["training_parameters"]["patience"]
+    
+    @property
     def threshold(self):
         return self.config["config"]["evaluation_parameters"]["threshold"]

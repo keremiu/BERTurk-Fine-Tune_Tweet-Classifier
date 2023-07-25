@@ -1,5 +1,5 @@
-training_tweets_csv_path: training_tweets.csv     # This set will be used by the Trainer class' test() method. Validation set will also be fractured out of this dataset
-test_tweets_csv_path: test_tweets.csv             # A seperate test dataset that will be used by the Trainer class' test() method
+training_tweets_csv_path: C:\Users\kerem\OneDrive\BERT\BERTurk-Fine-Tune_Tweet-Classifier\Balanced.csv #training_tweets.csv     # This set will be used by the Trainer class' test() method. Validation set will also be fractured out of this dataset
+test_tweets_csv_path: C:\Users\kerem\OneDrive\BERT\BERTurk-Fine-Tune_Tweet-Classifier\Balanced.csv #test_tweets.csv             # A seperate test dataset that will be used by the Trainer class' test() method
 
 # Dataset:
 # The dataset must have the two columns of "text" and "label" in which the "text" column contains the tweets and "label" column contains the label(s)
@@ -14,7 +14,9 @@ device: cuda                # cuda or cpu
 model_parameters:
   bert_model_name: dbmdz/bert-base-turkish-128k-cased
   layers: [                                               # Data is forwarded into these layers in the order of their indicies
-    {"name": "linear", "in": 768, "out": 3},
+    {"name": "linear", "in": 768, "out": 264},
+    {"name": "linear", "in": 264, "out": 80},
+    {"name": "linear", "in": 80, "out": 28},
   ]
 
 # Available Layers: 
@@ -27,11 +29,12 @@ model_parameters:
 training_parameters:
   validation_size: 0.2      # A percentage between 0 and 1
   batch_size: 1
-  learning_rate: 0.00002
+  learning_rate: 0.00002               #0.00002
   class_weights: True       # True or False
   optimizer: ADAM           # SGD or ADAM
   scheduler:                # Leave empty to disable
-  num_epochs: 5
+  num_epochs: 40
+  patience: 5
 
 evaluation_parameters:
-  threshold: 0.5
+  threshold: 0.1

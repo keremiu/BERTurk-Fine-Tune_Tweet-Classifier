@@ -99,11 +99,10 @@ class Preprocessor():
 
         # Split the data into train and test
         train_tweets, validation_tweets = train_test_split(labeled_tweets, shuffle=True, test_size=validation_size)
-
         # Initialize datasets
+        print(train_tweets["label"])
         train_dataset = TweetDataset(train_tweets["tokens"], train_tweets["label"].to_list(), train_tweets["text"].to_list())
         validation_dataset = TweetDataset(validation_tweets["tokens"], validation_tweets["label"].to_list(), validation_tweets["text"].to_list())
-
         # Initialize dataloaders
         train_dataloader = DataLoader(train_dataset, batch_size=batch_size)
         validation_dataloader = DataLoader(validation_dataset, batch_size=batch_size)
@@ -111,6 +110,15 @@ class Preprocessor():
         # Calculate Class Weights
         # "If a dataset contains 100 positive and 300 negative examples of a single class, then pos_weight for the class should be equal to 300/100 = 3"
         df_training_one_hot = pandas.DataFrame(train_dataset.labels)
-        class_weights = [sum(df_training_one_hot[column] == 0) / sum(df_training_one_hot[column] == 1) for column in df_training_one_hot.columns]
+        epsilon = 0.01
+        class_weights = []
+        for column in df_training_one_hot.columns:
+            num_zeros = sum(df_training_one_hot[column] == 0)
+            num_ones = sum(df_training_one_hot[column] == 1)
+            if num_ones != 0:
+                class_weights.append(num_zeros / num_ones)
+            else:
+                class_weights.append(epsilon)  # or whatever you want to do in this situation
+
 
         return train_dataloader, validation_dataloader, class_weights
