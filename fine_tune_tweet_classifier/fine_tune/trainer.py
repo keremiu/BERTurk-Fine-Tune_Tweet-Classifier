@@ -68,14 +68,13 @@ class Trainer():
            scheduler = lr_scheduler.LinearLR(optimizer, start_factor=1.0, end_factor=0.5, total_iters=30)
         elif self.config_service.lr_scheduler == "ExponentialLR":
            scheduler = lr_scheduler.ExponentialLR(optimizer, gamma=0.99)
-
+           
+        best_validation_f1 = 0
+        epochs_no_improve = 0
         for epoch in range(1, self.config_service.num_epochs+1):
             training_loss = 0
             training_preds = []
             training_labels = []
-            
-            best_validation_f1 = 0
-            epochs_no_improve = 0
             patience = self.config_service.patience  # Make sure to set this value in your config
             
             self.model.train()
