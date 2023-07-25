@@ -8,11 +8,11 @@ test_tweets_csv_path: C:\Users\kerem\OneDrive\BERT\BERTurk-Fine-Tune_Tweet-Class
 # A label cannot have blank spaces ( ), quotation marks ('' or "") and brackets ({} or []) in its name. 
 
 model_path:                 # The model that is going to be used by the Trainer class' test() method. Leave empty if you want to use the model saved by the current process
-
+                            # if you want test with best val model in traning use best_model.pt
 device: cuda                # cuda or cpu
 
 model_parameters:
-  bert_model_name: dbmdz/bert-base-turkish-128k-cased
+  bert_model_name: dbmdz/bert-base-turkish-128k-cased  
   layers: [                                               # Data is forwarded into these layers in the order of their indicies
     {"name": "linear", "in": 768, "out": 264},
     {"name": "linear", "in": 264, "out": 80},
